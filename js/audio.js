@@ -1,6 +1,11 @@
 const A4 = 440;
-const NOTE_NAMES = ["C4", "C#4", "D4", "D#4", "E4", "F4", "F#4", "G4", "G#4", "A4", "A#4", "B4", "C5", "C#5", "D5", "D#5"];
-const NOTE_TEXT = ["C<br />Middle", "C#<br />D♭", "D", "D#<br />E♭", "E", "F", "F#<br />G♭", "G", "G#<br />A♭", "A", "A#<br />B♭", "B", "C", "C#<br />D♭", "D", "D#<br />E♭", "E"];
+
+// const NOTE_NAMES = ["C4", "C#4", "D4", "D#4", "E4", "F4", "F#4", "G4", "G#4", "A4", "A#4", "B4", "C5", "C#5", "D5", "D#5"];
+// const NOTE_TEXT = ["C<br />Middle", "C#<br />D♭", "D", "D#<br />E♭", "E", "F", "F#<br />G♭", "G", "G#<br />A♭", "A", "A#<br />B♭", "B", "C", "C#<br />D♭", "D", "D#<br />E♭"];
+
+const NOTE_NAMES = ["C4", "C#4", "D4", "D#4", "E4", "F4", "F#4", "G4", "G#4", "A4", "A#4", "B4", "C5", "C#5", "D5"];
+const NOTE_TEXT = ["C<br />Middle", "C#<br />D♭", "D", "D#<br />E♭", "E", "F", "F#<br />G♭", "G", "G#<br />A♭", "A", "A#<br />B♭", "B", "C", "C#<br />D♭", "D"];
+
 const A4_INDEX = NOTE_NAMES.indexOf("A4");
 
 const ATTACK_TIME = 1;
