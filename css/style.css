@@ -1,0 +1,91 @@
+:root {
+  color-scheme: dark;
+  --bg: #1c1f26;
+  --surface: #2a2e38;
+  --surface-active: #4a90e2;
+  --text: #f2f3f5;
+  --text-dim: #9aa0ac;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  display: flex;
+  flex-direction: column;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.app-header {
+  text-align: center;
+  padding: 1rem 0 0.5rem;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.subtitle {
+  margin: 0.25rem 0 0;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+
+.waveform-select {
+  appearance: none;
+  margin-top: 0.75rem;
+  padding: 0.4rem 1rem;
+  border: 1px solid var(--surface);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.note-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  padding: 1rem;
+  align-content: stretch;
+}
+
+.note-button {
+  appearance: none;
+  border: none;
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1.4rem;
+  font-weight: 600;
+  min-height: 72px;
+  touch-action: manipulation;
+  transition: transform 50ms ease, background-color 50ms ease;
+}
+
+.note-button.active {
+  background: var(--surface-active);
+  transform: scale(0.95);
+}
+
+@media (min-width: 480px) {
+  .note-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
