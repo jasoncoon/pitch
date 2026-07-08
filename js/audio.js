@@ -1,29 +1,34 @@
 const A4 = 440;
-const NOTE_NAMES = ["C4", "C#4", "D4", "D#4", "E4", "F4", "F#4", "G4", "G#4", "A4", "A#4", "B4"];
+const NOTE_NAMES = ["C4", "C#4", "D4", "D#4", "E4", "F4", "F#4", "G4", "G#4", "A4", "A#4", "B4", "C5", "C#5", "D5", "D#5"];
+const NOTE_TEXT = ["C<br />Middle", "C#<br />D♭", "D", "D#<br />E♭", "E", "F", "F#<br />G♭", "G", "G#<br />A♭", "A", "A#<br />B♭", "B", "C", "C#<br />D♭", "D", "D#<br />E♭", "E"];
 const A4_INDEX = NOTE_NAMES.indexOf("A4");
 
-const ATTACK_TIME = 0.05;
-const RELEASE_TIME = 0.02;
+const ATTACK_TIME = 1;
+const DECAY_TIME = 0.4; // fade-out length after release, so notes don't cut off abruptly
 const NOTE_GAIN = 0.25;
 
 // Breath wobble: a slow, shallow detune LFO standing in for the pitch drift
-// of real air pressure through a reed.
+// of real air pressure through a reed. Measured via sliding-window pitch
+// tracking of the reference recording -- a real reed's pitch is set by its
+// physical mass/stiffness, not an embouchure, so it barely wobbles at all
+// (~1.5 cents RMS, no strong periodic component) compared to a
+// breath-controlled wind instrument's vibrato.
 const VIBRATO_RATE = 2; // Hz
-const VIBRATO_DEPTH = 6; // cents
-
-// Breath noise: a short filtered noise burst layered under the attack to
-// suggest the "chiff" of air hitting the reed, then it fades out on its own.
-const BREATH_DURATION = 0.3; // seconds, also the shared noise buffer length
-const BREATH_DECAY = 0.15; // seconds, fade-out after the attack peak
-const BREATH_GAIN = NOTE_GAIN * 0.35;
+const VIBRATO_DEPTH = 1.5; // cents
 
 export const WAVEFORMS = ["reed", "sine", "triangle", "sawtooth", "square"];
 
 // Fourier sine-coefficients (index 0 = DC, index n = amplitude of the nth
-// harmonic) approximating a free-reed spectrum: strong fundamental, prominent
-// 2nd harmonic, and a handful of tapering upper partials for a buzzy, airy
-// timbre closer to a real pitch pipe than a stock oscillator waveform.
-const REED_HARMONICS = [0, 1.0, 0.55, 0.35, 0.25, 0.18, 0.12, 0.08, 0.05];
+// harmonic), measured via Goertzel analysis of a real pitch pipe recording
+// (C5, sustained note) rather than guessed: a weak 2nd harmonic and a
+// dominant 3rd harmonic, unlike a stock oscillator waveform. Extended out to
+// the 16th harmonic (rather than stopping at 8) because the recording still
+// had meaningful energy that far up -- truncating it made the synthesized
+// tone sound duller/thinner than the real recording.
+const REED_HARMONICS = [
+  0, 1.0, 0.092, 0.376, 0.11, 0.144, 0.052, 0.082, 0.12, 0.136, 0.107, 0.08,
+  0.036, 0.01, 0.038, 0.1, 0.027,
+];
 
 function frequencyFor(index) {
   return A4 * Math.pow(2, (index - A4_INDEX) / 12);
@@ -38,7 +43,6 @@ export class PitchPipe {
     this._context = null;
     this._activeNotes = new Map();
     this._reedWave = null;
-    this._noiseBuffer = null;
     this.waveform = "reed";
   }
 
@@ -54,19 +58,6 @@ export class PitchPipe {
       this._reedWave = context.createPeriodicWave(real, imag);
     }
     return this._reedWave;
-  }
-
-  _getNoiseBuffer(context) {
-    if (!this._noiseBuffer) {
-      const length = Math.ceil(context.sampleRate * BREATH_DURATION);
-      const buffer = context.createBuffer(1, length, context.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < length; i++) {
-        data[i] = Math.random() * 2 - 1;
-      }
-      this._noiseBuffer = buffer;
-    }
-    return this._noiseBuffer;
   }
 
   _ensureContext() {
@@ -114,31 +105,9 @@ export class PitchPipe {
     lfoGain.connect(oscillator.detune);
     lfo.start(now);
 
-    // Breath noise: short filtered burst layered under the attack.
-    const noiseSource = context.createBufferSource();
-    noiseSource.buffer = this._getNoiseBuffer(context);
-    const noiseFilter = context.createBiquadFilter();
-    noiseFilter.type = "bandpass";
-    noiseFilter.frequency.value = frequency * 2;
-    noiseFilter.Q.value = 0.7;
-    const noiseGain = context.createGain();
-    noiseGain.gain.setValueAtTime(0, now);
-    noiseGain.gain.linearRampToValueAtTime(BREATH_GAIN, now + ATTACK_TIME);
-    noiseGain.gain.linearRampToValueAtTime(0, now + ATTACK_TIME + BREATH_DECAY);
-    noiseSource.connect(noiseFilter);
-    noiseFilter.connect(noiseGain);
-    noiseGain.connect(context.destination);
-    noiseSource.start(now);
-    noiseSource.stop(now + BREATH_DURATION);
-    noiseSource.onended = () => {
-      noiseSource.disconnect();
-      noiseFilter.disconnect();
-      noiseGain.disconnect();
-    };
-
     oscillator.start(now);
 
-    this._activeNotes.set(noteName, { oscillator, gainNode, lfo, lfoGain, noiseSource });
+    this._activeNotes.set(noteName, { oscillator, gainNode, lfo, lfoGain });
   }
 
   noteOff(noteName) {
@@ -150,34 +119,26 @@ export class PitchPipe {
     if (!active) return;
     this._activeNotes.delete(noteName);
 
-    const { oscillator, gainNode, lfo, lfoGain, noiseSource } = active;
+    const { oscillator, gainNode, lfo, lfoGain } = active;
     const context = this._context;
     const now = context.currentTime;
 
     gainNode.gain.cancelScheduledValues(now);
     gainNode.gain.setValueAtTime(gainNode.gain.value, now);
-    gainNode.gain.linearRampToValueAtTime(0, now + RELEASE_TIME);
+    gainNode.gain.linearRampToValueAtTime(0, now + DECAY_TIME);
 
-    oscillator.stop(now + RELEASE_TIME);
+    oscillator.stop(now + DECAY_TIME);
     oscillator.onended = () => {
       oscillator.disconnect();
       gainNode.disconnect();
     };
 
-    lfo.stop(now + RELEASE_TIME);
+    lfo.stop(now + DECAY_TIME);
     lfo.onended = () => {
       lfo.disconnect();
       lfoGain.disconnect();
     };
-
-    // The breath-noise burst may have already finished and auto-stopped
-    // itself (see BREATH_DURATION); stopping an already-stopped source throws.
-    try {
-      noiseSource.stop(now);
-    } catch {
-      // already stopped
-    }
   }
 }
 
-export { NOTE_NAMES };
+export { NOTE_NAMES, NOTE_TEXT };

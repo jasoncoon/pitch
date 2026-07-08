@@ -30,31 +30,51 @@ body {
 }
 
 .app-header {
-  text-align: center;
-  padding: 1rem 0 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 1rem;
 }
 
 .app-header h1 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.1rem;
   font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.version-label {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--text-dim);
 }
 
 .subtitle {
-  margin: 0.25rem 0 0;
+  margin: 0 0 0 auto;
   color: var(--text-dim);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  white-space: nowrap;
 }
 
 .waveform-select {
   appearance: none;
-  margin-top: 0.75rem;
-  padding: 0.4rem 1rem;
+  padding: 0.35rem 0.6rem;
   border: 1px solid var(--surface);
   border-radius: 8px;
   background: var(--surface);
   color: var(--text);
-  font-size: 0.95rem;
+  font-size: 0.85rem;
+  min-width: 0;
+  max-width: 40vw;
+}
+
+/* The waveform picker and title are the priority; drop the subtitle first
+   when the row gets too tight for all four items on one line. */
+@media (max-width: 420px) {
+  .subtitle {
+    display: none;
+  }
 }
 
 .note-grid {

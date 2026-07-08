@@ -1,5 +1,8 @@
 import { PitchPipe } from "./audio.js";
 import { renderNoteButtons } from "./ui.js";
+import { VERSION } from "./version.js";
+
+document.getElementById("version-label").textContent = `v${VERSION}`;
 
 const pitchPipe = new PitchPipe();
 const grid = document.getElementById("note-grid");
@@ -13,6 +16,6 @@ waveformSelect.addEventListener("change", () => {
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js");
+    navigator.serviceWorker.register("./sw.js", { type: "module" });
   });
 }

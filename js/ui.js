@@ -1,37 +1,48 @@
-import { NOTE_NAMES } from "./audio.js";
+import { NOTE_NAMES, NOTE_TEXT } from "./audio.js";
+
+const NOTE_DURATION_MS = 3_000;
 
 export function renderNoteButtons(container, pitchPipe) {
-  // Keyed by pointerId so releasing one finger of a multi-note chord doesn't
-  // stop the others.
-  const activePointers = new Map();
+  // Keyed by button so re-tapping a still-sounding note stops it early
+  // instead of stacking a second auto-stop.
+  const pendingStops = new Map();
 
-  const releasePointer = (pointerId) => {
-    const active = activePointers.get(pointerId);
-    if (!active) return;
-    activePointers.delete(pointerId);
-    active.button.classList.remove("active");
-    pitchPipe.noteOff(active.noteName);
-  };
-
-  for (const noteName of NOTE_NAMES) {
+  for (let i = 0; i < NOTE_NAMES.length; i++) {
+    const noteName = NOTE_NAMES[i];
+    const noteText = NOTE_TEXT[i];
     const button = document.createElement("button");
     button.className = "note-button";
     button.type = "button";
-    button.textContent = noteName.replace("4", "");
+    button.innerHTML = noteText;
     button.addEventListener("contextmenu", (e) => e.preventDefault());
 
     button.addEventListener("pointerdown", (e) => {
       e.preventDefault();
-      activePointers.set(e.pointerId, { button, noteName });
+
+      const pendingStop = pendingStops.get(button);
+      if (pendingStop) {
+        // Already playing -- tapping again stops it early instead of
+        // restarting the auto-stop timer.
+        clearTimeout(pendingStop);
+        pendingStops.delete(button);
+        button.classList.remove("active");
+        pitchPipe.noteOff(noteName);
+        return;
+      }
+
       button.classList.add("active");
       pitchPipe.noteOn(noteName);
+
+      pendingStops.set(
+        button,
+        setTimeout(() => {
+          button.classList.remove("active");
+          pitchPipe.noteOff(noteName);
+          pendingStops.delete(button);
+        }, NOTE_DURATION_MS)
+      );
     });
 
     container.appendChild(button);
   }
-
-  // Listen at the window level (rather than per-button) so a pointer that's
-  // dragged off the button, or interrupted by the OS, still gets released.
-  window.addEventListener("pointerup", (e) => releasePointer(e.pointerId));
-  window.addEventListener("pointercancel", (e) => releasePointer(e.pointerId));
 }

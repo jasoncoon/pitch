@@ -1,6 +1,8 @@
-// Bump this on every deploy that changes a cached file, or clients will
-// keep serving stale assets indefinitely.
-const CACHE_NAME = "pitch-pipe-v1";
+import { VERSION } from "./js/version.js";
+
+// Bump the shared VERSION in js/version.js on every deploy that changes a
+// cached file, or clients will keep serving stale assets indefinitely.
+const CACHE_NAME = `pitch-pipe-v${VERSION}`;
 
 const PRECACHE_URLS = [
   "./",
@@ -9,6 +11,7 @@ const PRECACHE_URLS = [
   "./js/app.js",
   "./js/audio.js",
   "./js/ui.js",
+  "./js/version.js",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png",

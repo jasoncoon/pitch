@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
@@ -9,10 +10,10 @@
   <link rel="icon" href="icons/icon-192.png">
   <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body>
   <header class="app-header">
-    <h1>Pitch Pipe</h1>
-    <p class="subtitle">A4 = 440Hz</p>
+    <h1>𝄞 Pitch Pipe <span id="version-label" class="version-label"></span></h1>
     <select id="waveform-select" class="waveform-select" aria-label="Waveform">
       <option value="reed" selected>Reed (pitch pipe)</option>
       <option value="sine">Sine</option>
@@ -20,10 +21,12 @@
       <option value="sawtooth">Sawtooth</option>
       <option value="square">Square</option>
     </select>
+    <span class="subtitle">A4 = 440Hz</span>
   </header>
 
   <main class="note-grid" id="note-grid"></main>
 
   <script type="module" src="js/app.js"></script>
 </body>
+
 </html>
